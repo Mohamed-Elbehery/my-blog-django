@@ -9,6 +9,14 @@
 {% endblock %}
 
 {% block content %}
+  {% if comment_form.errors %}
+    <div id="alert">
+      <h2>Saving the comment failed!</h2>
+      <p>Please check the commen form below the post and fix your errors.</p>
+      <a href="#commen-form">Fix!</a>
+    </div>
+  {% endif %}
+
   <section id="summary">
     <h2>{{ post.title }}</h2>
   
@@ -18,8 +26,26 @@
       {% endfor %}
     </div>
 
+    {% if not is_saved_for_later %}
+      <div id="read-later">
+        <form action="{% url "read-later" %}" method="POST">
+          {% csrf_token %}
+          <input type="hidden" value="{{ post.id }}" name="post_id">
+          <button>Read Later</button>
+        </form>
+      </div>
+    {% else %}
+      <div id="read-later">
+        <form action="{% url "read-later" %}" method="POST">
+          {% csrf_token %}
+          <input type="hidden" value="{{ post.id }}" name="post_id">
+          <button class="remove-btn">Remove From Read Later</button>
+        </form>
+      </div>
+    {% endif %}
+
     <article>
-      <img src="{% static "blog/images/"|add:post.image_name %}" alt="Post Title" />
+      <img src="{{ post.image.url }}" alt="Post Title" />
       <address>By <a href="mailto:{{ post.author.email_address }}">{{ post.author|title }}</a></address>
       <div>Last updated on <time datetime="{{ post.date|date:"d-M-Y" }}">{{ post.date|date:"d-M-Y" }}</time></div>
     </article>
@@ -30,4 +56,32 @@
       {{ post.content|linebreaks }}
     </p>
   </main>
+
+  <section id="comments">
+    <ul>
+      {% for comment in comments  %}
+        <li>
+          <h2>{{ comment.user_name }}</h2>
+          <p>{{ comment.text|linebreaks }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section id="comment-form">
+    <h2>Your Comment</h2>
+    <form action="{% url "post-detail" post.slug %}" method="POST">
+      {% csrf_token %}
+
+      {% for form_field in comment_form %}
+        <div class="form-control {% if form_field.errors %}invalid{% endif %}">
+          {{ form_field.label_tag }}
+          {{ form_field }}
+          {{ form_field.errors }}
+        </div>
+      {% endfor %}
+
+      <button>Save Comment</button>
+    </form>
+  </section>
 {% endblock %}
